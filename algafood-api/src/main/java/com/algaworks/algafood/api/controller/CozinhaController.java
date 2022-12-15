@@ -3,8 +3,7 @@ package com.algaworks.algafood.api.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,15 +37,12 @@ public class CozinhaController {
 	public ResponseEntity<Cozinha> buscar(@PathVariable Long cozinhaId) {
 		Cozinha cozinha = cozinhaRepository.buscar(cozinhaId);
 		
-		//return ResponseEntity.status(HttpStatus.OK).body(cozinha);
-		//return ResponseEntity.ok(cozinha);
+		//Retorna a resposta padrão quando há um Id
+		if (cozinha != null) {
+			return ResponseEntity.ok(cozinha);
+		}
 		
-		HttpHeaders headers = new HttpHeaders();
-		headers.add(HttpHeaders.LOCATION, "http://localhost:8080/cozinhas");
-		
-		return ResponseEntity
-			.status(HttpStatus.FOUND)
-			.headers(headers)
-			.build();
+		//Retorna 404 Not Found quando o Id é nulo no banco
+		return ResponseEntity.notFound().build();
 	}
 }
