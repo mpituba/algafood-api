@@ -2,6 +2,7 @@ package com.algaworks.algafood.api.controller;
 
 import java.util.List;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -54,5 +56,35 @@ public class CozinhaController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Cozinha adicionar(@RequestBody Cozinha cozinha) {
 		return cozinhaRepository.salvar(cozinha);
+	}
+		
+	
+	@PutMapping("/{cozinhaId}")
+	public ResponseEntity<Cozinha> atualizar(@PathVariable Long cozinhaId,
+			@RequestBody Cozinha cozinha) {
+		
+		/**Cozinha vem do banco por id via @PathVariable
+		 * Entidade do Requestbody é copiada a uma entidade buscada em banco
+		 * O if verifica se a Entidade no banco é nula. Pois pode não existir.
+		 * Cópia pode ser feita propriedade a propriedade ou via BeansUtils
+		 * que fará uma cópia da entidade inteira. Do terceiro parâmetro em diante,
+		 * são as propriedades que não devem ser copiadas, pois queremos manter o Id,
+		 * caso contrário teremos um Id nulo e erro ao tentar atualizar.
+		 * Entidade atualizada via BeansUtils e que veio do banco é persistida.
+		 * Retorno é enviado ao Builder dos ReponseEntity
+		 * O segundo retorno é para o caso da entidade buscada em banco ser nula.
+		 */
+		
+		Cozinha cozinhaAtual = cozinhaRepository.buscar(cozinhaId);
+		
+		if (cozinhaAtual != null) {
+			//cozinhaAtual.setNome(cozinha.getNome());
+			BeanUtils.copyProperties(cozinha, cozinhaAtual, "id");
+			cozinhaRepository.salvar(cozinhaAtual);
+			return ResponseEntity.ok(cozinhaAtual);
+		}
+		
+		return ResponseEntity.notFound().build();
+				
 	}
 }
