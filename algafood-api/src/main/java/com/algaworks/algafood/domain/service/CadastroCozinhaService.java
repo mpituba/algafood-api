@@ -21,14 +21,14 @@ public class CadastroCozinhaService {
 	/** Este método tando salva quanto atualiza um registro de Cozinha. * */
 	public Cozinha salvar(Cozinha cozinha) {
 		
-		return cozinhaRepository.salvar(cozinha);
+		return cozinhaRepository.save(cozinha);
 				
 	}
 	
 	public void excluir(Long cozinhaId) {
 		
 		try {
-			cozinhaRepository.remover(cozinhaId);
+			cozinhaRepository.deleteById(cozinhaId);
 		
 		}catch (EmptyResultDataAccessException e) {
 			throw new EntidadeNaoEncontradaException(

@@ -3,6 +3,7 @@ package com.algaworks.algafood.api.controller;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -129,7 +130,7 @@ public class RestauranteController {
 			Long formaPagamentoIdBody = restaurante.getFormasPagamento().getId();
 			
 			/** Busca Cozinha e FormaPagamento que vieram no corpo da requisição. **/
-			Cozinha cozinhaBody = cozinhaRepository.buscar(cozinhaIdBody);
+			Optional<Cozinha> cozinhaBody = cozinhaRepository.findById(cozinhaIdBody);
 			FormaPagamento formaPagamentoBody = formaPagamentoRepository.buscar(formaPagamentoIdBody);
 			
 			/**
