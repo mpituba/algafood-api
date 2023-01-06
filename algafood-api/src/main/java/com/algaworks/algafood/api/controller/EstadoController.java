@@ -1,6 +1,7 @@
 package com.algaworks.algafood.api.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,19 +37,19 @@ public class EstadoController {
 	
 	@GetMapping
 	public List<Estado> listar() {
-		return estadoRepository.listar();
+		return estadoRepository.findAll();
 	}
 	
 	@GetMapping("/{estadoId}")
 	public ResponseEntity<Estado> buscar (@PathVariable Long estadoId) {
 		
-		Estado estado = estadoRepository.buscar(estadoId);
+		Optional<Estado> estado = estadoRepository.findById(estadoId);
 		
-		if (estado == null) {
+		if (estado.isEmpty()) {
 			return ResponseEntity.notFound().build();
 		}
 		
-		return ResponseEntity.ok(estado);
+		return ResponseEntity.ok(estado.get());
 	}
 	
 	@PostMapping
@@ -76,7 +77,7 @@ public class EstadoController {
 	public ResponseEntity<?> atualizar (@PathVariable Long estadoId,
 			@RequestBody Estado estado) {
 		
-		Estado estadoAtual = estadoRepository.buscar(estadoId);
+		Optional<Estado> estadoAtual = estadoRepository.findById(estadoId);
 		
 		try {
 			
@@ -104,15 +105,15 @@ public class EstadoController {
 			}
 						
 			
-			if (estadoAtual == null) {
+			if (estadoAtual.isEmpty()) {
 
 				return ResponseEntity.notFound().build();
 			}
 			
-			BeanUtils.copyProperties(estado, estadoAtual, "estadoId");
+			BeanUtils.copyProperties(estado, estadoAtual.get(), "estadoId");
 			
-			estadoAtual = cadastroEstado.salvar(estadoAtual);
-			return ResponseEntity.ok(estadoAtual);
+			Estado SalvarEstado = cadastroEstado.salvar(estadoAtual.get());
+			return ResponseEntity.ok(SalvarEstado);
 						
 		}catch (EntidadeNaoEncontradaException e) {
 			
@@ -128,11 +129,11 @@ public class EstadoController {
 	@DeleteMapping("/{estadoId}")
 	public ResponseEntity<?> remover(@PathVariable Long estadoId) {
 		
-		Estado estado = estadoRepository.buscar(estadoId);
+		Optional<Estado> estado = estadoRepository.findById(estadoId);
 		
 		try {
 			
-			if (estado == null) {
+			if (estado.isEmpty()) {
 				
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 				

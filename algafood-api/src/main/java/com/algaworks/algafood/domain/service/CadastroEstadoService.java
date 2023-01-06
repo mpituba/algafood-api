@@ -1,5 +1,7 @@
 package com.algaworks.algafood.domain.service;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -19,16 +21,16 @@ public class CadastroEstadoService {
 	
 	public Estado salvar(Estado estado) {
 		
-		return estadoRepository.salvar(estado);
+		return estadoRepository.save(estado);
 	}
 	
 	
 	public void excluir(Long estadoId) {
 			
-		Estado estado = estadoRepository.buscar(estadoId);
+		Optional<Estado> estado = estadoRepository.findById(estadoId);
 		
 		try {
-			estadoRepository.remover(estadoId);
+			estadoRepository.deleteById(estadoId);
 			
 		
 		}catch (EmptyResultDataAccessException e) {
@@ -38,7 +40,7 @@ public class CadastroEstadoService {
 		}catch (DataIntegrityViolationException e) {
 			throw new EntidadeEmUsoException(
 					String.format("O Estado de Id: %d e Nome: %s, não pode ser removido, pois está em uso.",
-							estadoId, estado.getNome()));
+							estadoId, estado.get().getNome()));
 		}
 		
 	}

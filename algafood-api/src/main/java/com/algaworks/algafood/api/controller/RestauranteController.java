@@ -7,9 +7,12 @@ import java.util.Optional;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.algaworks.algafood.domain.exception.EntidadeEmUsoException;
 import com.algaworks.algafood.domain.exception.EntidadeNaoEncontradaException;
 import com.algaworks.algafood.domain.model.Cozinha;
 import com.algaworks.algafood.domain.model.FormaPagamento;
@@ -50,17 +54,17 @@ public class RestauranteController {
 	@GetMapping
 	public ResponseEntity<List<Restaurante>> listar () {
 		
-		return ResponseEntity.status(HttpStatus.OK).body(restauranteRepository.listar());
+		return ResponseEntity.status(HttpStatus.OK).body(restauranteRepository.findAll());
 		
 	}
 	
 	@GetMapping("/{restauranteId}")
 	public ResponseEntity<Restaurante> buscar (@PathVariable Long restauranteId) {
 		
-		Restaurante restaurante = restauranteRepository.buscar(restauranteId);
+		Optional<Restaurante> restaurante = restauranteRepository.findById(restauranteId);
 		
-		if (restaurante != null) {
-			return ResponseEntity.status(HttpStatus.OK).body(restaurante);
+		if (restaurante.isPresent()) {
+			return ResponseEntity.status(HttpStatus.OK).body(restaurante.get());
 		}
 		
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -123,7 +127,7 @@ public class RestauranteController {
 			}
 			
 			/** Busca Restaurante no banco. **/
-			Restaurante restauranteAtual = restauranteRepository.buscar(restauranteId);
+			Optional<Restaurante> restauranteAtual = restauranteRepository.findById(restauranteId);
 			
 			/** Armazena propriedades do corpo da requisição. **/
 			Long cozinhaIdBody = restaurante.getCozinha().getId();
@@ -131,31 +135,31 @@ public class RestauranteController {
 			
 			/** Busca Cozinha e FormaPagamento que vieram no corpo da requisição. **/
 			Optional<Cozinha> cozinhaBody = cozinhaRepository.findById(cozinhaIdBody);
-			FormaPagamento formaPagamentoBody = formaPagamentoRepository.buscar(formaPagamentoIdBody);
+			Optional<FormaPagamento> formaPagamentoBody = formaPagamentoRepository.findById(formaPagamentoIdBody);
 			
 			/**
 			 *  Testa se Restaurante, Cozinha e FormaPagamento do corpo da requisição são nulos
 			 *  e faz o tratamento específico para cada caso.
 			 **/	
-			if (cozinhaBody == null) {
+			if (cozinhaBody.isEmpty()) {
 			 throw new 	EntidadeNaoEncontradaException(
 					 String.format("Não existe um cadastro de Cozinha com código %d", cozinhaIdBody));
 			}
 			
-			if (formaPagamentoBody == null) {
+			if (formaPagamentoBody.isEmpty()) {
 				 throw new 	EntidadeNaoEncontradaException(
 						 String.format("Não existe um cadastro de FormaPagamento com código %d", formaPagamentoIdBody));
 				}
 			
 			/**
-			 * Testa se Restaurante que veio do banco existe, e se existir copia as propriedades do Restaurante
+			 * Testa se Restaurante que veio do banco existe, e se existir, copia as propriedades do Restaurante
 			 * que veio no corpo da requisição para o Restaurante Atualizado e faz o salvamento em banco e retorno
 			 * apropriado da requisição com 200 Ok.
 			 **/
-			if (restauranteAtual != null) {
-				BeanUtils.copyProperties(restaurante, restauranteAtual, "restauranteid");
-				cadastroRestaurante.salvar(restauranteAtual);
-				return ResponseEntity.ok(restauranteAtual);
+			if (restauranteAtual.isPresent()) {
+				BeanUtils.copyProperties(restaurante, restauranteAtual.get(), "restauranteid");
+				cadastroRestaurante.salvar(restauranteAtual.get());
+				return ResponseEntity.ok(restauranteAtual.get());
 			}
 			
 		}catch (EntidadeNaoEncontradaException e) {
@@ -170,22 +174,57 @@ public class RestauranteController {
 				
 	}
 	
+	@DeleteMapping("/{restauranteId}")
+	public ResponseEntity<?> remover(@PathVariable Long restauranteId) {
+		
+		Optional<Restaurante> restaurante = restauranteRepository.findById(restauranteId);
+		
+		try {
+			
+			if (restaurante.isEmpty()) {
+				
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+				
+			}
+						
+			cadastroRestaurante.excluir(restauranteId);
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+						
+		}catch (EntidadeNaoEncontradaException e) {
+			
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+					
+		}catch (EmptyResultDataAccessException e) {
+			
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+			
+		}catch (DataIntegrityViolationException e) {
+			
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+			
+		}catch (EntidadeEmUsoException e) {
+			
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+			
+		}
+	}
+	
 	@PatchMapping("/{restauranteId}")
 	public ResponseEntity<?> atualizarParcial(@PathVariable Long restauranteId,
 			@RequestBody Map<String, Object> campos) {
 		
-		Restaurante restauranteAtual = restauranteRepository.buscar(restauranteId);
+		Optional<Restaurante> restauranteAtual = restauranteRepository.findById(restauranteId);
 		
-		if(restauranteAtual == null) {
+		if(restauranteAtual.isEmpty()) {
 			
 			return ResponseEntity.notFound().build();
 			
 		}
 		
-		merge(campos, restauranteAtual);
+		merge(campos, restauranteAtual.get());
 		
 		//Chamada ao método PUT
-		return atualizar(restauranteId, restauranteAtual);
+		return atualizar(restauranteId, restauranteAtual.get());
 	}
 
 	

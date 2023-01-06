@@ -2,6 +2,7 @@ package com.algaworks.algafood.api.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,7 @@ public class CidadeController {
 		
 		List<Cidade> cidadeList = new ArrayList<Cidade>();
 		
-		cidadeList = cidadeRepository.listar();
+		cidadeList = cidadeRepository.findAll();
 		
 		return ResponseEntity.ok(cidadeList);
 	}
@@ -48,15 +49,15 @@ public class CidadeController {
 	@GetMapping("/{cidadeId}")
 	public ResponseEntity<?> buscar (@PathVariable Long cidadeId) {
 		
-		Cidade cidade = cidadeRepository.buscar(cidadeId);
+		Optional<Cidade> cidade = cidadeRepository.findById(cidadeId);
 		
-		if (cidade == null) {
+		if (cidade.isEmpty()) {
 			
 			return ResponseEntity.notFound().build();
 			
 		}
 		
-		return ResponseEntity.ok(cidade);
+		return ResponseEntity.ok(cidade.get());
 		
 	}
 	
@@ -105,7 +106,7 @@ public class CidadeController {
 	@PutMapping("/{cidadeId}")
 	public ResponseEntity<?> atualizar(@PathVariable Long cidadeId, @RequestBody Cidade cidade) {
 		
-		Cidade cidadeAtual = cidadeRepository.buscar(cidadeId);
+		Optional<Cidade> cidadeAtual = cidadeRepository.findById(cidadeId);
 		
 		try { 
 			
@@ -156,18 +157,18 @@ public class CidadeController {
 			}
 			
 						
-			if (cidadeAtual == null) {
+			if (cidadeAtual.isEmpty()) {
 				
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
 						String.format("A Cidade de Id %d não existe.", cidadeId));
 								
 			}
 			
-			BeanUtils.copyProperties(cidade, cidadeAtual, "cidadeId");
+			BeanUtils.copyProperties(cidade, cidadeAtual.get(), "cidadeId");
 			
-			cidadeAtual = cadastroCidade.salvar(cidadeAtual);
+			Cidade cidadeSalva = cadastroCidade.salvar(cidadeAtual.get());
 			
-			return ResponseEntity.ok(cidade);
+			return ResponseEntity.ok(cidadeSalva);
 			
 		}catch (EntidadeEmConflitoException e) {
 			
@@ -184,7 +185,7 @@ public class CidadeController {
 	@DeleteMapping("/{cidadeId}")
 	public ResponseEntity<?> excluir (@PathVariable Long cidadeId) {
 		
-		Cidade cidade = cidadeRepository.buscar(cidadeId);
+		Optional<Cidade> cidade = cidadeRepository.findById(cidadeId);
 		
 		try {
 		

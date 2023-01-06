@@ -1,5 +1,7 @@
 package com.algaworks.algafood.domain.service;
 
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -18,15 +20,15 @@ public class CadastroCidadeService {
 	 
 	public Cidade salvar(Cidade cidade) {
 			
-			return cidadeRepository.salvar(cidade);
+			return cidadeRepository.save(cidade);
 	 }
 		
 	public void excluir(Long cidadeId) {
 			
-		Cidade cidade = cidadeRepository.buscar(cidadeId);
+		Optional<Cidade> cidade = cidadeRepository.findById(cidadeId);
 		
 		try {
-			cidadeRepository.remover(cidadeId);
+			cidadeRepository.deleteById(cidadeId);
 		
 		}catch (EmptyResultDataAccessException e) {
 			throw new EntidadeNaoEncontradaException(
@@ -35,7 +37,7 @@ public class CadastroCidadeService {
 		}catch (DataIntegrityViolationException e) {
 			throw new EntidadeEmUsoException(
 					String.format("A Cidade de Id: %d e Nome: %s, não pode ser removida, pois está em uso.",
-							cidadeId, cidade.getNome()));
+							cidadeId, cidade.get().getNome()));
 		}
 	}
 	
